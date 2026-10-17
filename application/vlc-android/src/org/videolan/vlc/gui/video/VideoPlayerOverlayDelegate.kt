@@ -1290,15 +1290,7 @@ class VideoPlayerOverlayDelegate (private val player: VideoPlayerActivity) {
     }
 
     private fun refreshSubtitles() {
-        player.service?.let { service ->
-            val currentSpu = service.spuTrack
-            if (currentSpu != null && currentSpu != "-1") {
-                service.setSpuTrack("-1")
-                player.window.decorView.postDelayed({
-                    service.setSpuTrack(currentSpu)
-                }, 150)
-            }
-        }
+        player.reloadPlayback()
     }
 
     fun showBookmarks() {

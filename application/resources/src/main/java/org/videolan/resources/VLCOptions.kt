@@ -317,6 +317,71 @@ object VLCOptions {
         if (paused) media.addOption(":start-paused")
         if (!prefs.getBoolean(KEY_SUBTITLES_AUTOLOAD, true)) media.addOption(":sub-language=none")
 
+        if (!noVideo) {
+            val freetypeRelFontsize = prefs.getString(KEY_SUBTITLES_SIZE, "16")
+            val freetypeBold = prefs.getBoolean(KEY_SUBTITLES_BOLD, false)
+            val freetypeColor = try {
+                Integer.decode(String.format("0x%06X", (0xFFFFFF and prefs.getInt(KEY_SUBTITLES_COLOR, 16777215))))
+            } catch (e: Exception) {
+                16777215
+            }
+            val freetypeColorOpacity = prefs.getInt(KEY_SUBTITLES_COLOR_OPACITY, 255)
+            val freetypeBackgroundEnabled = prefs.getBoolean(KEY_SUBTITLES_BACKGROUND, false)
+            val freetypeBackgroundColor = try {
+                Integer.decode(String.format("0x%06X", (0xFFFFFF and prefs.getInt(KEY_SUBTITLES_BACKGROUND_COLOR, 16777215))))
+            } catch (e: Exception) {
+                16777215
+            }
+            val freetypeBackgroundColorOpacity = prefs.getInt(KEY_SUBTITLES_BACKGROUND_COLOR_OPACITY, 255)
+            val freetypeShadowEnabled = prefs.getBoolean(KEY_SUBTITLES_SHADOW, true)
+            val freetypeShadowColor = try {
+                Integer.decode(String.format("0x%06X", (0xFFFFFF and prefs.getInt(KEY_SUBTITLES_SHADOW_COLOR, ContextCompat.getColor(context, R.color.black)))))
+            } catch (e: Exception) {
+                0
+            }
+            val freetypeShadowOpacity = prefs.getInt(KEY_SUBTITLES_SHADOW_COLOR_OPACITY, 128)
+            val freetypeOutlineEnabled = prefs.getBoolean(KEY_SUBTITLES_OUTLINE, true)
+            val freetypeOutlineSize = prefs.getString(KEY_SUBTITLES_OUTLINE_SIZE, "4")
+            val freetypeOutlineColor = try {
+                Integer.decode(String.format("0x%06X", (0xFFFFFF and prefs.getInt(KEY_SUBTITLES_OUTLINE_COLOR, 0))))
+            } catch (e: Exception) {
+                0
+            }
+            val freetypeOutlineOpacity = prefs.getInt(KEY_SUBTITLES_OUTLINE_COLOR_OPACITY, 255)
+            val subtitlesEncoding = prefs.getString(KEY_SUBTITLE_TEXT_ENCODING, "") ?: ""
+
+            if (subtitlesEncoding.isNotEmpty()) {
+                media.addOption(":subsdec-encoding=$subtitlesEncoding")
+            }
+            if (isVLC4()) {
+                media.addOption(":sub-text-scale=" + (1600 / freetypeRelFontsize!!.toFloat()).toString())
+            } else {
+                media.addOption(":freetype-rel-fontsize=" + freetypeRelFontsize!!)
+            }
+            if (freetypeBold) media.addOption(":freetype-bold")
+            media.addOption(":freetype-color=$freetypeColor")
+            media.addOption(":freetype-opacity=$freetypeColorOpacity")
+            if (freetypeBackgroundEnabled) {
+                media.addOption(":freetype-background-color=$freetypeBackgroundColor")
+                media.addOption(":freetype-background-opacity=$freetypeBackgroundColorOpacity")
+            } else {
+                media.addOption(":freetype-background-opacity=0")
+            }
+            if (freetypeShadowEnabled) {
+                media.addOption(":freetype-shadow-color=$freetypeShadowColor")
+                media.addOption(":freetype-shadow-opacity=$freetypeShadowOpacity")
+            } else {
+                media.addOption(":freetype-shadow-opacity=0")
+            }
+            if (freetypeOutlineEnabled) {
+                media.addOption(":freetype-outline-thickness=$freetypeOutlineSize")
+                media.addOption(":freetype-outline-color=$freetypeOutlineColor")
+                media.addOption(":freetype-outline-opacity=$freetypeOutlineOpacity")
+            } else {
+                media.addOption(":freetype-outline-opacity=0")
+            }
+        }
+
         if (hasRenderer) {
             media.addOption(":sout-chromecast-audio-passthrough=" + prefs.getBoolean(KEY_CASTING_PASSTHROUGH, true))
             media.addOption(":sout-chromecast-conversion-quality=" + prefs.getString(KEY_CASTING_QUALITY, "2")!!)

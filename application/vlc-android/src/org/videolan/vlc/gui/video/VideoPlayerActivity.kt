@@ -121,9 +121,11 @@ import org.videolan.medialibrary.interfaces.Medialibrary
 import org.videolan.medialibrary.interfaces.media.Bookmark
 import org.videolan.medialibrary.interfaces.media.MediaWrapper
 import org.videolan.medialibrary.media.MediaLibraryItem
+import org.videolan.resources.ACTIVITY_RESULT_PREFERENCES
 import org.videolan.resources.AndroidDevices
 import org.videolan.resources.AppContextProvider
 import org.videolan.resources.EXIT_PLAYER
+import org.videolan.resources.VLCInstance
 import org.videolan.resources.MOBILE_MAIN_ACTIVITY
 import org.videolan.resources.PLAYLIST_TYPE_ALL
 import org.videolan.resources.PLAY_DISABLE_HARDWARE
@@ -1188,6 +1190,10 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == ACTIVITY_RESULT_PREFERENCES) {
+            reloadPlayback()
+            return
+        }
         if (data == null) return
 
         if (data.hasExtra(EXTRA_MRL)) {
@@ -2311,6 +2317,41 @@ open class VideoPlayerActivity : AppCompatActivity(), PlaybackService.Callback, 
                 overlayDelegate.showOverlay(true)
             }
             enableSubs()
+        }
+    }
+
+    fun reloadPlayback() {
+        val service = service ?: return
+        val mw = service.currentMediaWrapper ?: return
+        val time = service.getTime()
+        val wasPlaying = service.isPlaying
+        val spu = service.spuTrack
+        val audio = service.audioTrack
+
+        lifecycleScope.launch {
+            savedTime = time
+            service.saveStartTime(time)
+            mw.time = time
+
+            VLCInstance.restart()
+            service.restartMediaPlayer()
+            videoLayout?.let {
+                service.mediaplayer.attachViews(it, displayManager, true, false)
+                val size = if (isBenchmark) MediaPlayer.ScaleType.SURFACE_FILL else MediaPlayer.ScaleType.entries[settings.getInt(VIDEO_RATIO, MediaPlayer.ScaleType.SURFACE_BEST_FIT.ordinal)]
+                service.mediaplayer.videoScale = size
+            }
+
+            loadMedia(forceUsingNew = true)
+
+            val margin = settings.getInt("spu_margin", 0)
+            if (margin != 0) {
+                service.setSpuMargin(margin)
+            }
+            if (!wasPlaying) {
+                service.pause()
+            }
+            spu?.let { if (it != "-1") service.setSpuTrack(it) }
+            audio?.let { if (it != "-1") service.setAudioTrack(it) }
         }
     }
 
